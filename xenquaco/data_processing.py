@@ -1,0 +1,88 @@
+import numpy as np
+import pandas as pd
+from typing import Union
+import tifffile as tiff
+from pathlib import Path
+import json
+
+
+def process_input(input_data: Union[str, Path, np.ndarray, pd.DataFrame, dict]):
+    """
+    Helper function processes and returns relevant format for input data
+
+    Parameters
+    ----------
+    input_data : str or Path or np.ndarray or pd.DataFrame or dict
+        Input data or path to input data
+
+    Returns
+    -------
+    np.ndarray or pd.DataFrame or dict
+        Input data in usable format
+
+    Raises
+    ------
+    TypeError
+        If input type is unsupported.
+    """
+    if input_data is None:
+        return input_data
+    elif isinstance(input_data, pd.DataFrame):
+        return input_data
+    elif isinstance(input_data, np.ndarray):
+        return input_data
+    elif isinstance(input_data, dict):
+        return input_data
+    elif isinstance(input_data, str):
+        return process_path(input_data)
+    elif isinstance(input_data, Path):
+        return process_path(str(input_data))
+    else:
+        raise TypeError("Unsupported input type. Must be a DataFrame, numpy array, dictionary, file path, or JSON.")
+
+
+def process_path(path: Union[str, Path]) -> Union[pd.DataFrame, np.ndarray, dict]:
+    """
+    Helper function determines filetype and returns read file
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to file
+
+    Returns
+    -------
+    pd.DataFrame or np.ndarray or dict
+        Read file
+
+    Raises
+    ------
+    FileNotFoundError
+        If file is not found
+    ValueError
+        If file type is not supported
+    """
+    path = str(path)
+    if path.endswith('.parquet'):
+        try:
+            return pd.read_parquet(path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'File not found at {path}')
+    elif path.endswith('.csv'):
+        try:
+            return pd.read_csv(path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'File not found at {path}')
+    elif path.endswith(('.tif', '.tiff')):
+        try:
+            return tiff.imread(path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'File not found at {path}')
+    elif path.endswith('.json'):
+        try:
+            with open(path, 'r') as file:
+                return json.load(file)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'File not found at {path}')
+    else:
+        raise ValueError("File type not supported")
